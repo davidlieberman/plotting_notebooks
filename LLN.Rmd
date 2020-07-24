@@ -1,0 +1,163 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, echo=FALSE, message=FALSE}
+library(data.table)
+library(purrr)
+library(dplyr)
+library(ggplot2)
+library(gganimate)
+library(extrafont)
+library(RColorBrewer)
+library(pals)
+
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE, dev = "svg")
+knitr::opts_knit$set(root.dir = "C:\\Users\\darkg\\Desktop\\Homework Scans\\2020Sm_ART167\\newsletter\\issue1")
+loadfonts(device = "win")
+```
+
+## Single Trial
+```{r}
+tosses = 250
+p = 0.5
+
+set.seed(1)
+trial = sample.int(2, tosses, replace = TRUE, prob = c(1-p, p)) - 1
+
+results = list()
+for(i in seq_along(trial)){
+  results[[i]] = as.data.frame.list(table(trial[1:i]))
+}
+
+data = rbindlist(results, fill=TRUE) %>%
+  setNames(c("Heads", "Tails")) %>% 
+  cbind("tosses" = 1:tosses) %>%
+  mutate(Heads = Heads / tosses, Tails = Tails / tosses) %>%
+  melt(id.vars = "tosses", variable.name = "outcome", value.name = "proportion")
+```
+
+```{r}
+g = ggplot(data, aes(x = outcome, y = proportion, group = outcome)) +
+  geom_bar(stat = "identity", aes(fill = outcome), show.legend = FALSE) +
+  labs(subtitle = "Tosses = {closest_state}",
+       x = "\nOutcome",
+       y = "Proportion\n",
+       fill = "") +
+  scale_fill_manual(values = brewer.pal(n = 10, name = "Spectral")[c(2,9)]) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 16),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size=12),
+        axis.text = element_text(size=11),
+        text = element_text(family = "CMU Serif")) +
+  transition_states(tosses, transition_length = 0.5, state_length = 0, wrap = TRUE)
+
+animate(g, fps = 20, nframes = 250, res=100)
+anim_save("single_coin.gif")
+```
+
+
+## Sampling Distribution
+```{r}
+coins = 1e4
+p = 0.5
+
+results = list()
+for(i in 1:20){
+  tosses = 50*i
+  results[[i]] = data.table(1:coins, replicate(coins, sum(sample.int(n=2, size=tosses, replace=TRUE, prob=c(1-p, p)) - 1)/tosses)) %>%
+    setNames(c("idx", as.character(50*i)))
+}
+
+data = reduce(results, merge, by = "idx") %>% 
+  melt(id.vars = "idx", variable.name = "tosses", value.name = "p_hat")
+```
+
+```{r}
+g = ggplot(data, aes(x = p_hat, group = tosses)) +
+  geom_density(aes(color = as.numeric(tosses), fill = as.numeric(tosses)), size = 2, alpha = 0.75, show.legend = FALSE) +
+  labs(title = "Coins = 1e4",
+       subtitle = "Tosses = {closest_state}",
+       x = expression(hat(p)),
+       y = "Density\n") +
+  scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size=12),
+        axis.text = element_text(size=11),
+        text = element_text(family = "CMU Serif")) +
+  transition_states(tosses, transition_length = 1, state_length = 1, wrap = TRUE)
+
+animate(g, fps = 30, nframes = 150, res=100)
+anim_save("sampling_distribution.gif")
+```
+
+
+## Multiple coins
+```{r}
+LLN = function(coins, tosses, p){
+  dt = replicate(coins, sample(c(0,1), tosses, replace = TRUE, prob = c(1-p, p))) %>% as.data.table()
+  dt = cbind(tosses = 1:tosses, map_df(dt, ~cumsum(.x)/1:tosses)) %>% setNames(c("tosses", paste("coin", 1:coins, sep="")))
+  return(dt)
+}
+
+coins = 10
+tosses = 1000
+p = 0.5
+
+data = LLN(coins, tosses, p) %>% melt(id.vars = "tosses", variable.name = "coin", value.name = "proportion")
+```
+
+```{r}
+g = ggplot(data, aes(x = tosses, y = proportion)) + 
+  geom_line(aes(color = coin), size = 1.5, alpha = 0.75) + 
+  scale_color_brewer(palette="Spectral") + 
+  coord_cartesian(ylim = c(0,1)) +
+  labs(title = "Multiple Coins",
+       subtitle = "Coins = 10",
+       x = "\nTosses",
+       y = "Proportion\n",
+       col = "") +
+  theme(panel.grid.major = element_line(colour = "grey"),
+        panel.background = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 16),
+        plot.subtitle = element_text(hjust = 0.5),
+        axis.title = element_text(hjust = 0.5, size=12),
+        axis.text = element_text(size=11),
+        legend.position=c(0.525,0.15),
+        legend.direction = "horizontal",
+        legend.box = "horizontal")
+
+g1 = g + transition_reveal(tosses)
+
+animate(g1, width = 480, height = 480, fps = 40, nframes = 1000, res=100)
+anim_save("multi_coin.gif")
+```
+
+```{r}
+data$tosses = as.factor(data$tosses)
+
+g = ggplot(data, aes(x = proportion, group = tosses)) + 
+  stat_density(aes(color = as.numeric(tosses), fill = as.numeric(tosses)),
+               size = 2, alpha = 0.75, geom = "area", position = "identity", show.legend = FALSE) +
+  labs(title = " ",
+       subtitle = " ",
+       x = "",
+       y = "Density\n") +
+  # scale_color_distiller(palette = "RdYlBu") +
+  # scale_fill_distiller(palette = "RdYlBu") +'
+  scale_color_gradientn(colours=matlab.like(1000)) +
+  scale_fill_gradientn(colours=matlab.like(1000)) +
+  coord_flip() +
+  theme(panel.grid.major = element_line(colour = "grey"),
