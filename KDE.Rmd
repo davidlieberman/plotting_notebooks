@@ -1,0 +1,115 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r setup, echo=FALSE, message=FALSE}
+library(data.table)
+library(purrr)
+library(dplyr)
+library(ggplot2)
+library(extrafont)
+library(RColorBrewer)
+library(pals)
+library(gganimate)
+
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE, dev = "svg")
+knitr::opts_knit$set(root.dir = "C:\\Users\\darkg\\Desktop\\Homework Scans\\2020Sm_ART167\\newsletter\\issue4")
+loadfonts(device = "win")
+```
+
+## Gaussian
+```{r}
+bandwidth = seq(from = 0.01, to = 2, by = 0.01)
+data_sample = rnorm(250)
+data = bandwidth %>% map_df(~with(density(data_sample, bw=.x, kernel = "gaussian", n = 1000), data.frame(x, y, bandwidth = .x)))
+```
+
+```{r}
+g = ggplot(data, aes(x = x, y = y, group = bandwidth, color = bandwidth, fill = bandwidth)) +
+  geom_line(size = 1.5, show.legend = FALSE) + 
+  geom_area(alpha = 0.75, show.legend = FALSE) +
+  geom_point(data = data.frame(x = data_sample), aes(x = x, y = 0), inherit.aes = FALSE, alpha = 0.75, shape = 4, size = 2) +
+  stat_function(fun = dnorm, color = "black", linetype = "dashed", size = 1.5) +
+  labs(title = "Bandwidth = {closest_state}",
+       x = "\nValue",
+       y = "Density\n") +
+  scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size=14),
+        axis.text = element_text(size=11),
+        text = element_text(family = "CMU Serif")) +
+  transition_states(bandwidth, transition_length = 0.5, state_length = 3, wrap = TRUE)
+
+animate(g, width = 2000, height = 2000, fps = 15, nframes = 500, res=300)
+anim_save("KDE_gaussian.gif")
+```
+
+## Rectangular
+```{r}
+bandwidth = seq(from = 0.01, to = 2, by = 0.01)
+data_sample = rnorm(250)
+data = bandwidth %>% map_df(~with(density(data_sample, bw=.x, kernel = "rectangular", n = 1000), data.frame(x, y, bandwidth = .x)))
+```
+
+```{r}
+g = ggplot(data, aes(x = x, y = y, group = bandwidth, color = bandwidth, fill = bandwidth)) +
+  geom_line(size = 1.5, show.legend = FALSE) + 
+  geom_area(alpha = 0.75, show.legend = FALSE) +
+  geom_point(data = data.frame(x = data_sample), aes(x = x, y = 0), inherit.aes = FALSE, alpha = 0.75, shape = 4, size = 2) +
+  stat_function(fun = dnorm, color = "black", linetype = "dashed", size = 1.5) +
+  labs(title = "Bandwidth = {closest_state}",
+       x = "\nValue",
+       y = "Density\n") +
+  scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size=12),
+        axis.text = element_text(size=11),
+        text = element_text(family = "CMU Serif")) +
+  transition_states(bandwidth, transition_length = 0.5, state_length = 3, wrap = TRUE)
+
+animate(g, width = 2000, height = 2000, fps = 15, nframes = 500, res=300)
+anim_save("KDE_rectangular.gif")
+```
+
+## Kernels
+```{r}
+kernels = c("gaussian", "epanechnikov", "rectangular", "triangular", "biweight", "cosine", "optcosine")
+data_sample = rnorm(100)
+data = kernels %>% map_df(~with(density(data_sample, kernel = .x, n = 1000), data.frame(x, y, kernel = as.factor(.x))))
+```
+
+```{r}
+g = ggplot(data, aes(x = x, y = y, group = kernel, color = as.numeric(kernel), fill = as.numeric(kernel))) +
+  geom_line(size = 1.5, show.legend = FALSE) +
+  geom_area(alpha = 0.75, show.legend = FALSE) +
+  geom_point(data = data.frame(x = data_sample), aes(x = x, y = 0), inherit.aes = FALSE, alpha = 0.75, shape = 4, size = 2) +
+  stat_function(fun = dnorm, color = "black", linetype = "dashed", size = 1.5) +
+  labs(title = "Kernel Function = {closest_state}",
+       x = "\nValue",
+       y = "Density\n") +
+  scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size=12),
+        axis.text = element_text(size=11),
+        text = element_text(family = "CMU Serif")) +
+  transition_states(kernel, transition_length = 0.5, state_length = 3, wrap = TRUE)
+
+animate(g, width = 2000, height = 2000, fps = 20, nframes = 100, res=300, detail=2)
+anim_save("KDE_kernels.gif")
+```
