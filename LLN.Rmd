@@ -81,7 +81,7 @@ data = reduce(results, merge, by = "idx") %>%
 ```{r}
 g = ggplot(data, aes(x = p_hat, group = tosses)) +
   geom_density(aes(color = as.numeric(tosses), fill = as.numeric(tosses)), size = 2, alpha = 0.75, show.legend = FALSE) +
-  labs(title = "Coins = 1e4",
+  labs(title = "Coins = 1e+04",
        subtitle = "Tosses = {closest_state}",
        x = expression(hat(p)),
        y = "Density\n") +
