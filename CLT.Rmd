@@ -18,7 +18,47 @@ knitr::opts_knit$set(root.dir = "C:\\Users\\darkg\\Desktop\\Homework Scans\\2020
 loadfonts(device = "win")
 ```
 
-## High Coins, Low Tosses
+## Binomial -> Normal
+```{r}
+coins = 1e5
+p = 0.5
+
+results = list()
+for(i in 1:20){
+  tosses = 5*i
+  results[[i]] = data.table(1:coins, replicate(coins, sum(sample.int(n=2, size=tosses, replace=TRUE, prob=c(1-p, p)) - 1)/tosses)) %>%
+    setNames(c("idx", as.character(5*i)))
+}
+
+data = reduce(results, merge, by = "idx") %>% 
+  melt(id.vars = "idx", variable.name = "tosses", value.name = "p_hat")
+```
+
+```{r}
+g = ggplot(data, aes(x = p_hat, group = tosses)) +
+  stat_density(aes(color = as.numeric(tosses), fill = as.numeric(tosses)),
+               adjust = 1.25, size = 2, alpha = 0.75, geom = "area", position = "identity", show.legend = FALSE) +
+  labs(title = "Coins = 1e+05",
+       subtitle = "Tosses = {closest_state}",
+       x = expression(hat(p)),
+       y = "Density\n") +
+  scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size=14),
+        axis.text = element_text(size=11),
+        text = element_text(family = "CMU Serif")) +
+  transition_states(tosses, transition_length = 1, state_length = 3)
+
+animate(g, width = 2000, height = 2000, fps = 30, nframes = 250, res=300)
+anim_save("binomial_gaussian.gif")
+```
+
+## Sampling Distribution -> Binomial
 ```{r}
 tosses = 10
 p = 0.5
@@ -57,7 +97,7 @@ animate(g, width = 2000, height = 2000, fps = 20, nframes = 100, res=300)
 anim_save("CLT_binomial.gif")
 ```
 
-## High Coins, High Tosses
+## Sampling Distribution -> Normal
 ```{r}
 tosses = 300
 p = 0.5
@@ -97,42 +137,3 @@ animate(g, width = 2000, height = 2000, fps = 20, nframes = 100, res=300)
 anim_save("CLT_gaussian.gif")
 ```
 
-## High Coins, Slowly Increasing tosses
-```{r}
-coins = 1e5
-p = 0.5
-
-results = list()
-for(i in 1:20){
-  tosses = 5*i
-  results[[i]] = data.table(1:coins, replicate(coins, sum(sample.int(n=2, size=tosses, replace=TRUE, prob=c(1-p, p)) - 1)/tosses)) %>%
-    setNames(c("idx", as.character(5*i)))
-}
-
-data = reduce(results, merge, by = "idx") %>% 
-  melt(id.vars = "idx", variable.name = "tosses", value.name = "p_hat")
-```
-
-```{r}
-g = ggplot(data, aes(x = p_hat, group = tosses)) +
-  stat_density(aes(color = as.numeric(tosses), fill = as.numeric(tosses)),
-               adjust = 1.25, size = 2, alpha = 0.75, geom = "area", position = "identity", show.legend = FALSE) +
-  labs(title = "Coins = 1e+05",
-       subtitle = "Tosses = {closest_state}",
-       x = expression(hat(p)),
-       y = "Density\n") +
-  scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
-  scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
-  theme(panel.background = element_blank(),
-        panel.grid.major = element_line(colour = "#808080"),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(hjust = 0.5, size = 14),
-        plot.subtitle = element_text(hjust = 0.5, size = 14),
-        axis.title = element_text(size=14),
-        axis.text = element_text(size=11),
-        text = element_text(family = "CMU Serif")) +
-  transition_states(tosses, transition_length = 1, state_length = 3)
-
-animate(g, width = 2000, height = 2000, fps = 30, nframes = 250, res=300)
-anim_save("binomial_gaussian.gif")
-```

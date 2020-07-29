@@ -1,0 +1,94 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r setup, echo=FALSE, message=FALSE}
+library(data.table)
+library(purrr)
+library(dplyr)
+library(ggplot2)
+library(extrafont)
+library(pals)
+library(gganimate)
+
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE, dev = "svg")
+knitr::opts_knit$set(root.dir = "C:\\Users\\darkg\\Desktop\\Homework Scans\\2020Sm_ART167\\newsletter\\issue3")
+loadfonts(device = "win")
+```
+
+## Power
+```{r}
+coins = 1e4
+p = 0.50
+
+data_0.5 = list()
+for(i in 1:161){
+  tosses = 2*i + 28
+  data_0.5[[i]] = replicate(coins, sum(sample.int(n=2, size=tosses, replace=TRUE, prob=c(1-p, p)) - 1)/tosses)
+}
+names(data_0.5) = as.character(2*c(1:161) + 28)
+
+data_0.5 = data_0.5 %>% imap(~with(density(.x, from = 0, to = 1, n = 1000, bw = 0.015), data.frame(x, y, "tosses" = as.factor(.y), "threshold" = quantile(.x, 0.95))))
+data_0.5 = rbindlist(data_0.5)
+```
+
+```{r}
+coins = 1e4
+p = 0.65
+
+data_0.65 = list()
+for(i in 1:161){
+  tosses = 2*i + 28
+  data_0.65[[i]] = replicate(coins, sum(sample.int(n=2, size=tosses, replace=TRUE, prob=c(1-p, p)) - 1)/tosses)
+}
+names(data_0.65) = as.character(2*c(1:161) + 28)
+
+data_0.65 = data_0.65 %>% imap(~with(density(.x, from = 0, to = 1, n = 1000, bw = 0.015), data.frame(x, y, "tosses" = as.factor(.y))))
+data_0.65 = rbindlist(data_0.65)
+data_0.65$threshold = data_0.5$threshold
+```
+
+```{r}
+#Calculate Power
+power_labels = data_0.65 %>% 
+  filter(x <= threshold) %>% 
+  group_by(tosses) %>% 
+  summarise(beta = round(sum(y)*(1/1000), 3)) %>% 
+  mutate(power = format(1 - beta, nsmall = 3))
+
+power_labels
+```
+
+```{r}
+g = ggplot(mapping = aes(x = x, y = y)) +
+  geom_area(data = data_0.65, aes(x = ifelse(x <= threshold, x, NA)), fill = "#3E5165", alpha = 0.85) +
+  geom_area(data = data_0.65, aes(x = ifelse(x >= threshold, x, NA), fill = as.numeric(tosses)), alpha = 0.75, show.legend = FALSE) +
+  geom_line(data = data_0.65, color = "black", size = 1.5) +
+  
+  geom_area(data = data_0.5, aes(x = ifelse(x >= threshold, x, NA)), fill = "#D53E4F", alpha = 0.85) +
+  geom_line(data = data_0.5, color = "#981E0B", size = 1.5) + 
+  geom_vline(data = data_0.5, aes(xintercept = threshold), size=1.25, linetype="dashed") +
+  
+  geom_text(data = power_labels, aes(x = 0.865, y = 5.45, label = power), size = 6) +
+  geom_segment(aes(x = 0.85, y = 5, xend = 0.65, yend = 3),
+               lineend = "round", linejoin = "round", arrow = arrow(length = unit(0.5, "cm")), color = "black", size = 0.75) +
+  
+  scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  labs(title = "Coins = 1e+04",
+       subtitle = "Tosses = {closest_state}",
+       x = expression(hat(p)),
+       y = "Density\n") +
+    theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size=14),
+        axis.text = element_text(size=11),
+        text = element_text(family = "CMU Serif")) +
+  transition_states(tosses, transition_length = 1, state_length = 2) + ease_aes()
+
+animate(g, width = 2000, height = 2000, fps = 20, nframes = 500, res=300)
+anim_save("power.gif")
+```
