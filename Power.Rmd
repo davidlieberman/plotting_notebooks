@@ -59,24 +59,27 @@ power_labels = data_0.65 %>%
   filter(x <= threshold) %>% 
   group_by(tosses) %>% 
   summarise(beta = round(sum(y)*(1/1000), 3)) %>% 
-  mutate(power = format(1 - beta, nsmall = 3))
+  mutate(power = 1 - beta)
+
+data_0.65$power = rep(power_labels$power, each = 1000)
 ```
 
 ```{r}
 g = ggplot(mapping = aes(x = x, y = y)) +
   geom_area(data = data_0.65, aes(x = ifelse(x <= threshold, x, NA)), fill = "#3E5165", alpha = 0.85) +
-  geom_area(data = data_0.65, aes(x = ifelse(x >= threshold, x, NA), fill = as.numeric(tosses)), alpha = 0.75, show.legend = FALSE) +
+  geom_area(data = data_0.65, aes(x = ifelse(x >= threshold, x, NA), fill = as.numeric(power)), alpha = 0.75, show.legend = FALSE) +
   geom_line(data = data_0.65, color = "black", size = 1.5) +
   
   geom_area(data = data_0.5, aes(x = ifelse(x >= threshold, x, NA)), fill = "#D53E4F", alpha = 0.85) +
   geom_line(data = data_0.5, color = "#981E0B", size = 1.5) + 
   geom_vline(data = data_0.5, aes(xintercept = threshold), size=1.25, linetype="dashed") +
   
-  geom_text(data = power_labels, aes(x = 0.865, y = 5.45, label = power), size = 6) +
+  geom_text(data = data_0.65, aes(x = 0.865, y = 5.45, label = format(power, nsmall = 3)), size = 6) +
   geom_segment(aes(x = 0.85, y = 5, xend = 0.65, yend = 3),
                lineend = "round", linejoin = "round", arrow = arrow(length = unit(0.5, "cm")), color = "black", size = 0.75) +
   
   scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  coord_cartesian(ylim = c(0, 15)) +
   labs(title = "Coins = 1e+04",
        subtitle = "Tosses = {closest_state}",
        x = expression(hat(p)),
@@ -89,8 +92,8 @@ g = ggplot(mapping = aes(x = x, y = y)) +
         axis.title = element_text(size=14),
         axis.text = element_text(size=11),
         text = element_text(family = "CMU Serif")) +
-  transition_states(tosses, transition_length = 1, state_length = 2) + ease_aes()
+  transition_states(tosses, transition_length = 1, state_length = 0) + ease_aes()
 
-animate(g, width = 2000, height = 2000, fps = 20, nframes = 500, res=300)
+animate(g, width = 2000, height = 2000, fps = 30, nframes = 1200, res=300)
 anim_save("power.gif")
 ```
