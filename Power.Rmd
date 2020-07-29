@@ -56,8 +56,6 @@ power_labels = data_0.65 %>%
   group_by(tosses) %>% 
   summarise(beta = round(sum(y)*(1/1000), 3)) %>% 
   mutate(power = format(1 - beta, nsmall = 3))
-
-power_labels
 ```
 
 ```{r}
