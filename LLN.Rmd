@@ -1,5 +1,7 @@
 ---
-title: "R Notebook"
+title: "Issue 1: Law of Large Numbers"
+author: "David Lieberman"
+header-includes:
 output:
   html_document:
     df_print: paged

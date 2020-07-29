@@ -1,6 +1,10 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Issue 4: Kernel Density Estimation"
+author: "David Lieberman"
+header-includes:
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, echo=FALSE, message=FALSE}
@@ -41,8 +45,8 @@ g = ggplot(data, aes(x = x, y = y, group = bandwidth, color = bandwidth, fill = 
         panel.grid.minor = element_blank(),
         plot.title = element_text(hjust = 0.5, size = 14),
         plot.subtitle = element_text(hjust = 0.5, size = 14),
-        axis.title = element_text(size=14),
-        axis.text = element_text(size=11),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 11),
         text = element_text(family = "CMU Serif")) +
   transition_states(bandwidth, transition_length = 0.5, state_length = 3, wrap = TRUE)
 
@@ -71,10 +75,10 @@ g = ggplot(data, aes(x = x, y = y, group = bandwidth, color = bandwidth, fill = 
   theme(panel.background = element_blank(),
         panel.grid.major = element_line(colour = "#808080"),
         panel.grid.minor = element_blank(),
-        plot.title = element_text(hjust = 0.5, size = 12),
-        plot.subtitle = element_text(hjust = 0.5, size = 12),
-        axis.title = element_text(size=12),
-        axis.text = element_text(size=11),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 11),
         text = element_text(family = "CMU Serif")) +
   transition_states(bandwidth, transition_length = 0.5, state_length = 3, wrap = TRUE)
 
@@ -103,10 +107,10 @@ g = ggplot(data, aes(x = x, y = y, group = kernel, color = as.numeric(kernel), f
   theme(panel.background = element_blank(),
         panel.grid.major = element_line(colour = "#808080"),
         panel.grid.minor = element_blank(),
-        plot.title = element_text(hjust = 0.5, size = 12),
-        plot.subtitle = element_text(hjust = 0.5, size = 12),
-        axis.title = element_text(size=12),
-        axis.text = element_text(size=11),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 11),
         text = element_text(family = "CMU Serif")) +
   transition_states(kernel, transition_length = 0.5, state_length = 3, wrap = TRUE)
 
