@@ -1,6 +1,10 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Issue 3: Power"
+author: "David Lieberman"
+header-includes:
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, echo=FALSE, message=FALSE}
