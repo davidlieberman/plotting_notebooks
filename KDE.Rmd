@@ -11,6 +11,7 @@ output:
 library(data.table)
 library(purrr)
 library(dplyr)
+library(evmix)
 library(ggplot2)
 library(extrafont)
 library(RColorBrewer)
@@ -22,10 +23,74 @@ knitr::opts_knit$set(root.dir = "C:\\Users\\darkg\\Desktop\\Homework Scans\\2020
 loadfonts(device = "win")
 ```
 
-## Gaussian
+## Histogram Binwidth
+```{r}
+set.seed(4)
+data_sample = rnorm(250)
+
+#this is super hacky and dumb, idk why ggplot won't let me animate properly, so I have to do this completely manually lol
+histogram_things = list()
+for(i in 1:50){
+  g = ggplot(data.table(x = data_sample), aes(x)) + geom_histogram(bins = 5*i)
+  histogram_things[[i]] = data.table(x = ggplot_build(g)$data[[1]]$x,
+                                     density = ggplot_build(g)$data[[1]]$density)
+}
+
+for(i in seq_along(histogram_things)){
+  binwidth = histogram_things[[i]]$x[2] - histogram_things[[i]]$x[1]
+  histogram_things[[i]] = cbind(histogram_things[[i]], "binwidth" = binwidth)
+}
+data = rbindlist(histogram_things)
+```
+
+```{r}
+g = ggplot(data, aes(x = x, y = density)) +
+  geom_col(aes(fill = as.numeric(factor(binwidth)), width = data$binwidth), show.legend = FALSE) +
+  stat_function(data = data.frame(x = c(-3, 3)), aes(x), inherit.aes = FALSE, fun = dnorm, color = "black", linetype = "dashed", size = 1.5) +
+  geom_rug(data = data.frame(x = data_sample), aes(x), inherit.aes = FALSE, sides="b") +
+  labs(title = "Binwidth = {closest_state}",
+       x = "\nx",
+       y = "Density\n") +
+  scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[190:25]) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(hjust = 0.5, size = 14),
+        axis.text = element_text(size = 11),
+        text = element_text(family = "CMU Serif")) +
+  transition_states(factor(round(binwidth, 4), levels = unique(round(binwidth, 4)), order = TRUE),
+                    transition_length = 0, state_length = 1)
+
+animate(g, width = 2000, height = 2000, fps = 5, nframes = 150, res = 300)
+anim_save("histogram_binning.gif")
+```
+
+```{r}
+ggplot(data.frame(x = data_sample), aes(x)) +
+  geom_histogram(aes(y=..density..), binwidth = bw.nrd0(data_sample)) +
+  stat_function(data = data.frame(x = c(-3, 3)), aes(x), inherit.aes = FALSE, fun = dnorm, color = "black", linetype = "dashed", size = 1.5) +
+  geom_rug(data = data.frame(x = data_sample), aes(x), inherit.aes = FALSE, sides="b") +
+  labs(title = paste("Binwidth = ", round(bw.nrd0(data_sample), 4)),
+       x = "x",
+       y = "Density\n") +
+  scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[190:25]) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(hjust = 0.5, size = 14),
+        axis.text = element_text(size = 11),
+        text = element_text(family = "CMU Serif"))
+
+ggsave(file="histogram_silverman.svg", width=6, height=5)
+```
+
+## Normal Kernel
 ```{r}
 bandwidth = seq(from = 0.01, to = 2, by = 0.01)
-data_sample = rnorm(250)
 data = bandwidth %>% map_df(~with(density(data_sample, bw=.x, kernel = "gaussian", n = 1000), data.frame(x, y, bandwidth = .x)))
 ```
 
@@ -33,10 +98,11 @@ data = bandwidth %>% map_df(~with(density(data_sample, bw=.x, kernel = "gaussian
 g = ggplot(data, aes(x = x, y = y, group = bandwidth, color = bandwidth, fill = bandwidth)) +
   geom_line(size = 1.5, show.legend = FALSE) + 
   geom_area(alpha = 0.75, show.legend = FALSE) +
-  geom_point(data = data.frame(x = data_sample), aes(x = x, y = 0), inherit.aes = FALSE, alpha = 0.75, shape = 4, size = 2) +
+  geom_rug(data = data.frame(x = data_sample), aes(x), inherit.aes = FALSE, sides="b") +
   stat_function(fun = dnorm, color = "black", linetype = "dashed", size = 1.5) +
-  labs(title = "Bandwidth = {closest_state}",
-       x = "\nValue",
+  labs(title = "Kernel = Normal",
+       subtitle = "Bandwidth = {closest_state}",
+       x = "\nx",
        y = "Density\n") +
   scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
   scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
@@ -45,19 +111,82 @@ g = ggplot(data, aes(x = x, y = y, group = bandwidth, color = bandwidth, fill = 
         panel.grid.minor = element_blank(),
         plot.title = element_text(hjust = 0.5, size = 14),
         plot.subtitle = element_text(hjust = 0.5, size = 14),
-        axis.title = element_text(size = 14),
+        axis.title = element_text(hjust = 0.5, size = 14),
         axis.text = element_text(size = 11),
         text = element_text(family = "CMU Serif")) +
-  transition_states(bandwidth, transition_length = 0.5, state_length = 3, wrap = TRUE)
+  transition_states(bandwidth, transition_length = 1, state_length = 0) + ease_aes()
 
-animate(g, width = 2000, height = 2000, fps = 15, nframes = 500, res=300)
-anim_save("KDE_gaussian.gif")
+animate(g, width = 2000, height = 2000, fps = 30, nframes = 750, res=300)
+anim_save("KDE_normal.gif")
 ```
 
-## Rectangular
+## Other Kernels
 ```{r}
-bandwidth = seq(from = 0.01, to = 2, by = 0.01)
-data_sample = rnorm(250)
+kernel_functions = list(kdgaussian, kduniform, kdtriangular, kdepanechnikov, kdbiweight, kdtriweight, kdtricube, kdparzen, kdcosine, kdoptcosine)
+kernel_names = c("Normal", "Uniform", "Triangular", "Epanechnikov", "Biweight", "Triweight", "Tricube", "Parzen", "Cosine", "Optcosine")
+names(kernel_functions) = kernel_names
+names(kernel_names) = kernel_names
+
+df = kernel_functions %>% invoke_map_df(x = seq(-3, 3, 0.001))
+df = cbind("x" = seq(-3, 3, 0.001), df)
+data = melt(df, id.vars = "x", variable.name = "kernel", value.name = "density")
+```
+
+```{r}
+ggplot(data, aes(x = x, y = density, color = kernel)) +
+  geom_line(size = 1) +
+  scale_x_continuous(breaks = -3:3) +
+  scale_color_brewer(palette="Spectral") + 
+  labs(x = "x",
+       y = "Density\n",
+       col = "Kernel") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(hjust = 0.5, size = 14),
+        axis.text = element_text(size=11),
+        text = element_text(family = "CMU Serif"),
+        legend.justification = c(1, 1), legend.position = c(1, 1))
+
+ggsave(file="kernels.svg", width=6, height=5)
+```
+
+```{r}
+df = kernel_names %>% tolower() %>% map_df(~dkden(seq(-3, 3, 0.001), data_sample, kernel = .x))
+df = cbind("x" = seq(-3, 3, 0.001), df)
+data = melt(df, id.vars = "x", variable.name = "kernel", value.name = "density")
+```
+
+```{r}
+g = ggplot(data, aes(x = x, y = density, color = as.numeric(kernel), fill = as.numeric(kernel))) +
+  geom_line(size = 1.5, show.legend = FALSE) +
+  geom_area(alpha = 0.75, show.legend = FALSE) +
+  geom_rug(data = data.frame(x = data_sample), aes(x), inherit.aes = FALSE, sides="b") +
+  stat_function(fun = dnorm, color = "black", linetype = "dashed", size = 1.5) +
+  labs(title = "Kernel = {closest_state}",
+       subtitle = paste0("Bandwidth = ", round(bw.nrd0(data_sample), 4)),
+       x = "\nx",
+       y = "Density\n") +
+  scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(hjust = 0.5, size = 14),
+        axis.text = element_text(size = 11),
+        text = element_text(family = "CMU Serif")) +
+  transition_states(kernel, transition_length = 1, state_length = 10) + ease_aes()
+
+animate(g, width = 2000, height = 2000, fps = 30, nframes = 600, res=300)
+anim_save("KDE_kernels.gif")
+```
+
+## Uniform Kernel
+```{r}
 data = bandwidth %>% map_df(~with(density(data_sample, bw=.x, kernel = "rectangular", n = 1000), data.frame(x, y, bandwidth = .x)))
 ```
 
@@ -65,10 +194,11 @@ data = bandwidth %>% map_df(~with(density(data_sample, bw=.x, kernel = "rectangu
 g = ggplot(data, aes(x = x, y = y, group = bandwidth, color = bandwidth, fill = bandwidth)) +
   geom_line(size = 1.5, show.legend = FALSE) + 
   geom_area(alpha = 0.75, show.legend = FALSE) +
-  geom_point(data = data.frame(x = data_sample), aes(x = x, y = 0), inherit.aes = FALSE, alpha = 0.75, shape = 4, size = 2) +
+  geom_rug(data = data.frame(x = data_sample), aes(x), inherit.aes = FALSE, sides="b") +
   stat_function(fun = dnorm, color = "black", linetype = "dashed", size = 1.5) +
-  labs(title = "Bandwidth = {closest_state}",
-       x = "\nValue",
+  labs(title = "Kernel = Uniform",
+       subtitle = "Bandwidth = {closest_state}",
+       x = "\nx",
        y = "Density\n") +
   scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
   scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
@@ -77,30 +207,34 @@ g = ggplot(data, aes(x = x, y = y, group = bandwidth, color = bandwidth, fill = 
         panel.grid.minor = element_blank(),
         plot.title = element_text(hjust = 0.5, size = 14),
         plot.subtitle = element_text(hjust = 0.5, size = 14),
-        axis.title = element_text(size = 14),
+        axis.title = element_text(hjust = 0.5, size = 14),
         axis.text = element_text(size = 11),
         text = element_text(family = "CMU Serif")) +
-  transition_states(bandwidth, transition_length = 0.5, state_length = 3, wrap = TRUE)
+  transition_states(bandwidth, transition_length = 1, state_length = 0) + ease_aes()
 
-animate(g, width = 2000, height = 2000, fps = 15, nframes = 500, res=300)
-anim_save("KDE_rectangular.gif")
+animate(g, width = 2000, height = 2000, fps = 30, nframes = 750, res=300)
+anim_save("KDE_uniform.gif")
 ```
 
-## Kernels
+
+## Gaussian Mixture
 ```{r}
-kernels = c("gaussian", "epanechnikov", "rectangular", "triangular", "biweight", "cosine", "optcosine")
-data_sample = rnorm(100)
-data = kernels %>% map_df(~with(density(data_sample, kernel = .x, n = 1000), data.frame(x, y, kernel = as.factor(.x))))
+bandwidth = seq(from = 0.01, to = 0.5, by = 0.01)
+data_sample = c(rnorm(250, mean = 0, sd = 0.5), rnorm(250, mean = 3, sd = 1))
+dgaussian_mixture = function(x) 0.5*dnorm(x, mean = 0, sd = 0.5) + 0.5*dnorm(x, mean = 3, sd = 1)
+data = bandwidth %>% map_df(~with(density(data_sample, bw=.x, kernel = "gaussian", n = 1000), data.frame(x, y, bandwidth = .x)))
 ```
 
 ```{r}
-g = ggplot(data, aes(x = x, y = y, group = kernel, color = as.numeric(kernel), fill = as.numeric(kernel))) +
-  geom_line(size = 1.5, show.legend = FALSE) +
+g = ggplot(data, aes(x = x, y = y, color = bandwidth, fill = bandwidth)) +
+  geom_line(size = 1.5, show.legend = FALSE) + 
   geom_area(alpha = 0.75, show.legend = FALSE) +
-  geom_point(data = data.frame(x = data_sample), aes(x = x, y = 0), inherit.aes = FALSE, alpha = 0.75, shape = 4, size = 2) +
-  stat_function(fun = dnorm, color = "black", linetype = "dashed", size = 1.5) +
-  labs(title = "Kernel Function = {closest_state}",
-       x = "\nValue",
+  geom_rug(data = data.frame(x = data_sample), aes(x), inherit.aes = FALSE, sides="b") +
+  stat_function(fun = dgaussian_mixture, color = "black", linetype = "dashed", size = 1.5) +
+  coord_cartesian(ylim = c(0, 0.6)) +
+  labs(title = "Kernel = Normal",
+       subtitle = "Bandwidth = {closest_state}",
+       x = "\nx",
        y = "Density\n") +
   scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
   scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
@@ -109,11 +243,45 @@ g = ggplot(data, aes(x = x, y = y, group = kernel, color = as.numeric(kernel), f
         panel.grid.minor = element_blank(),
         plot.title = element_text(hjust = 0.5, size = 14),
         plot.subtitle = element_text(hjust = 0.5, size = 14),
-        axis.title = element_text(size = 14),
+        axis.title = element_text(hjust = 0.5, size = 14),
         axis.text = element_text(size = 11),
         text = element_text(family = "CMU Serif")) +
-  transition_states(kernel, transition_length = 0.5, state_length = 3, wrap = TRUE)
+  transition_states(bandwidth, transition_length = 1, state_length = 0) + ease_aes()
 
-animate(g, width = 2000, height = 2000, fps = 20, nframes = 100, res=300, detail=2)
-anim_save("KDE_kernels.gif")
+animate(g, width = 2000, height = 2000, fps = 30, nframes = 750, res=300)
+anim_save("gaussian_mixture.gif")
+```
+
+
+## Exponential
+```{r}
+bandwidth = seq(from = 0.01, to = 0.5, by = 0.01)
+data_sample = rexp(500)
+data = bandwidth %>% map_df(~with(density(data_sample, bw=.x, kernel = "gaussian", n = 1000), data.frame(x, y, bandwidth = .x)))
+```
+
+```{r}
+g = ggplot(data, aes(x = x, y = y, color = bandwidth, fill = bandwidth)) +
+  geom_line(size = 1.5, show.legend = FALSE) + 
+  geom_area(alpha = 0.75, show.legend = FALSE) +
+  geom_rug(data = data.frame(x = data_sample), aes(x), inherit.aes = FALSE, sides="b") +
+  stat_function(fun = dexp, color = "black", linetype = "dashed", size = 1.5) +
+  labs(title = "Kernel = Normal",
+       subtitle = "Bandwidth = {closest_state}",
+       x = "\nx",
+       y = "Density\n") +
+  scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(hjust = 0.5, size = 14),
+        axis.text = element_text(size = 11),
+        text = element_text(family = "CMU Serif")) +
+  transition_states(bandwidth, transition_length = 1, state_length = 0) + ease_aes()
+
+animate(g, width = 2000, height = 2000, fps = 30, nframes = 750, res=300)
+anim_save("exp.gif")
 ```
