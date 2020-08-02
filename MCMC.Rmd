@@ -1,0 +1,100 @@
+---
+title: "Issue 6: Markov Chain Monte Carlo"
+author: "David Lieberman"
+header-includes:
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, echo=FALSE, message=FALSE}
+library(data.table)
+library(purrr)
+library(dplyr)
+library(ggplot2)
+library(extrafont)
+library(RColorBrewer)
+library(pals)
+library(gganimate)
+
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE, dev = "svg")
+knitr::opts_knit$set(root.dir = "C:\\Users\\darkg\\Desktop\\Homework Scans\\2020Sm_ART167\\newsletter\\issue6")
+loadfonts(device = "win")
+```
+
+## Target Density
+```{r}
+dgaussian_mixture = function(x) 0.5*dnorm(x, mean = 0, sd = 0.5) + 0.5*dnorm(x, mean = 3, sd = 1)
+```
+
+## Random Walk
+```{r}
+set.seed(123)
+n_final = 1200
+
+current_state = c(0)
+candidate = c()
+for (i in 1:n_final){
+  candidate[i] = rnorm(1, mean = current_state[i])
+  r = dgaussian_mixture(candidate[i]) / dgaussian_mixture(current_state[i])
+  if (r > 1){
+    current_state[i+1] = candidate[i]
+  }
+  else{
+    u = runif(1)
+    if(r > u){
+      current_state[i+1] = candidate[i]
+    }
+    else{
+      current_state[i+1] = current_state[i]
+    }
+  }
+}
+```
+
+## KDE Data
+```{r}
+kde_df = 10:n_final %>% map(function(z){temp = density(current_state[1:z], n = 1000); return(data.table("n" = z, "x" = temp$x, "density" = temp$y)) })
+kde_df = rbindlist(kde_df)
+```
+
+## Frequency Data
+```{r}
+rug_df = accumulate(current_state[1:n_final], rbind) %>% map(as.data.table) %>% rbindlist(idcol = TRUE) %>% setnames(c("n", "x")) %>% filter(n >= 10)
+```
+
+## Candidate Data
+```{r}
+walk_df = data.table("n" = seq_along(current_state)[-length(current_state)],
+                     "current_state" = current_state[-length(current_state)],
+                     "candidate" = candidate,
+                     "accepted" = !duplicated(current_state)[-1]) %>% filter(n >= 10 & n <= n_final)
+```
+
+```{r}
+g = ggplot() + 
+  geom_area(data = kde_df, aes(x = x, y = density, color = as.numeric(n), fill = as.numeric(n)), size = 1.5, alpha = 0.75, show.legend = FALSE) +
+  scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  stat_function(fun = dgaussian_mixture, color = "black", linetype = "dashed", size = 1.5) +
+
+  geom_segment(data = walk_df, aes(x = current_state, y = 0, xend = candidate, yend = 0), color = fifelse(walk_df$accepted, "green", "red"),
+               lineend = "round", linejoin = "round", arrow = arrow(length = unit(0.03, "npc")), size = 1) +
+  geom_rug(data = rug_df, aes(x), inherit.aes = FALSE, sides="b") +
+  labs(title = "N = {closest_state}",
+       x = "\nx",
+       y = "Density\n") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(hjust = 0.5, size = 14),
+        axis.text = element_text(size = 11),
+        text = element_text(family = "CMU Serif")) +
+  scale_x_continuous(breaks = seq(-2.5, 7.5, by = 2.5)) +
+  transition_states(n, transition_length = 0, state_length = 1)
+
+animate(g, width = 2000, height = 2000, fps = 15, nframes = 1200, res=300)
+anim_save("MCMC_1200.gif")
+```

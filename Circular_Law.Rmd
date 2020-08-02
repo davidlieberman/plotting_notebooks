@@ -1,0 +1,202 @@
+---
+title: "Issue 5: Circular Law"
+author: "David Lieberman"
+header-includes:
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, echo=FALSE, message=FALSE}
+library(Rcpp)
+library(RcppArmadillo)
+library(data.table)
+library(purrr)
+library(dplyr)
+library(ggplot2)
+library(ggforce)
+library(extrafont)
+library(RColorBrewer)
+library(pals)
+library(gganimate)
+
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE, dev = "svg")
+knitr::opts_knit$set(root.dir = "C:\\Users\\darkg\\Desktop\\Homework Scans\\2020Sm_ART167\\newsletter\\issue5")
+loadfonts(device = "win")
+```
+
+## Setup
+```{r}
+sourceCpp("random_matrix_solve.cpp")
+```
+
+```{r}
+circle_x = seq(-1, 1, by=0.001)
+circle_y = sqrt(1 - circle_x^2)*2/pi
+```
+
+```{r}
+plot_points_animated = function(data){
+  ggplot(data, aes(x = Real, y = Imaginary)) + 
+  geom_point(aes(color = as.numeric(n)), size = 3, alpha = 0.5, show.legend = FALSE) + 
+  geom_circle(aes(x0=0, y0=0, r=1), inherit.aes = FALSE, size = 1.5) +
+  labs(title = "N = {closest_state}",
+       x = "\nReal",
+       y = "Imaginary\n") +
+  scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:200]) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 18),
+        plot.subtitle = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(hjust = 0.5, size = 14),
+        axis.text = element_text(size = 11),
+        text = element_text(family = "CMU Serif")) +
+  transition_states(n, transition_length = 0, state_length = 1)
+}
+```
+
+```{r}
+plot_density_animated = function(data, axis){
+  ggplot(data, aes_(x=as.name(axis))) +
+    stat_density(aes(color = as.numeric(n), fill = as.numeric(n)),
+               size = 1.5, alpha = 0.75, geom = "area", position = "identity", show.legend = FALSE) +
+    geom_line(data = data.frame(circle_x, circle_y), aes(x=circle_x, y=circle_y), inherit.aes = FALSE, linetype = "dashed", size = 1.5) +
+  {if (axis == "Real") labs(x = "", y = "Density\n")} +
+  {if (axis == "Imaginary") labs(x = "", y = "\nDensity")} + {if (axis == "Imaginary") coord_flip() } +
+  scale_color_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  scale_fill_gradientn(colors = cubehelix(n = 255, r = -1.5, hue = 2, gamma = 0.8)[25:220]) +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_line(colour = "#808080"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        plot.subtitle = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(hjust = 0.5, size = 14),
+        axis.text = element_text(size = 11),
+        text = element_text(family = "CMU Serif")) +
+  {if (axis == "Real") theme(axis.text.x = element_blank(), plot.margin = margin(5.5, 5.5, 0, 5.5, "pt"))} +
+  {if (axis == "Imaginary") theme(axis.text.y = element_blank(), plot.margin = margin(5.5, 5.5, 5.5, 0, "pt"))} +
+  transition_states(n, transition_length = 0, state_length = 1)
+}
+```
+
+
+## Normal
+```{r}
+set.seed(1)
+step = 50
+n_final = 40
+distribution = "normal"
+
+results = random_matrix_solve(step, n_final, distribution)
+data = as.data.table(rbindlist(results))
+```
+
+```{r}
+g = plot_points_animated(data)
+animate(g, width = 2000, height = 2000, fps = 15, nframes = 300, res = 300)
+anim_save("normal_points.gif")
+```
+
+```{r}
+g = plot_density_animated(data, "Real")
+animate(g, width = 2000, height = 667, fps = 15, nframes = 300, res = 300)
+anim_save("normal_density_real.gif")
+```
+
+```{r}
+g = plot_density_animated(data, "Imaginary")
+animate(g, width = 667, height = 2000, fps = 15, nframes = 300, res = 300)
+anim_save("normal_density_imaginary.gif")
+```
+
+
+## Uniform
+```{r}
+set.seed(1)
+step = 50
+n_final = 40
+distribution = "uniform"
+
+results = random_matrix_solve(step, n_final, distribution)
+data = as.data.table(rbindlist(results))
+data = data %>% group_by(n) %>% slice(-1) #eigen solver screwing up
+```
+
+```{r}
+g = plot_points_animated(data)
+animate(g, width = 2000, height = 2000, fps = 4, nframes = 40, res = 300)
+anim_save("uniform_points.gif")
+```
+
+```{r}
+g = plot_density_animated(data, "Real")
+animate(g, width = 2000, height = 667, fps = 4, nframes = 40, res = 300)
+anim_save("uniform_density_real.gif")
+```
+
+```{r}
+g = plot_density_animated(data, "Imaginary")
+animate(g, width = 667, height = 2000, fps = 4, nframes = 40, res = 300)
+anim_save("uniform_density_imaginary.gif")
+```
+
+
+## Exponential
+```{r}
+set.seed(1)
+step = 50
+n_final = 40
+distribution = "exponential"
+
+results = random_matrix_solve(step, n_final, distribution)
+data = as.data.table(rbindlist(results))
+```
+
+```{r}
+g = plot_points_animated(data)
+animate(g, width = 2000, height = 2000, fps = 4, nframes = 40, res = 300)
+anim_save("exponential_points.gif")
+```
+
+```{r}
+g = plot_density_animated(data, "Real")
+animate(g, width = 2000, height = 667, fps = 4, nframes = 40, res = 300)
+anim_save("exponential_density_real.gif")
+```
+
+```{r}
+g = plot_density_animated(data, "Imaginary")
+animate(g, width = 667, height = 2000, fps = 4, nframes = 40, res = 300)
+anim_save("exponential_density_imaginary.gif")
+```
+
+
+## Cauchy
+```{r}
+set.seed(1)
+step = 50
+n_final = 40
+distribution = "cauchy"
+
+results = random_matrix_solve(step, n_final, distribution)
+data = as.data.table(rbindlist(results))
+```
+
+```{r}
+g = plot_points_animated(data)
+animate(g, width = 2000, height = 2000, fps = 4, nframes = 40, res = 300)
+anim_save("cauchy_points.gif")
+```
+
+```{r}
+g = plot_density_animated(data, "Real")
+animate(g, width = 2000, height = 667, fps = 4, nframes = 40, res = 300)
+anim_save("cauchy_density_real.gif")
+```
+
+```{r}
+g = plot_density_animated(data, "Imaginary")
+animate(g, width = 667, height = 2000, fps = 4, nframes = 40, res = 300)
+anim_save("cauchy_density_imaginary.gif")
+```
