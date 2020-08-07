@@ -24,26 +24,44 @@ eigs = eigen(normal_matrix)$values
 eigenvalues = data.table(Real = Re(eigs), Imaginary = Im(eigs)) / (2*sqrt(n))
 
 ggplot(data = eigenvalues, aes(x=Imaginary, y=Real)) + 
-  geom_violin(data = normal_vector, aes(x=idx, y=value), trim = FALSE, inherit.aes = FALSE, size = 1) +
-  geom_point(size = 1, alpha = 0.5, color="blue") + 
-  geom_point(aes(x=0, y=0), inherit.aes = FALSE, size = 15) +
-  geom_circle(aes(x0=0, y0=0, r=0.5), inherit.aes = FALSE, size = 1.5) +
-  coord_flip() +
-  labs(x = NULL, y = NULL) +
-  theme(plot.background = element_rect(fill = "#FAFAFA"),
-        panel.grid.major = element_line(colour = "#808080"),
-        panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text = element_blank())
+    geom_violin(data = normal_vector, aes(x=idx, y=value), trim = FALSE, inherit.aes = FALSE, size = 1) +
+    coord_flip() +
+    labs(x = "Imaginary", y = "Real") +
+    theme(plot.background =  element_blank(),
+          axis.title = element_text(hjust = 0.51, size = 14),
+          panel.grid.major = element_line(colour = "#808080"),
+          panel.grid.minor = element_blank(),
+          text = element_text(family = "CMU Serif"))
 ```
 
 ```{r, fig.height=5, fig.width=5}
 eigenvalues = data.table(Real = Re(eigs), Imaginary = Im(eigs)) / (sqrt(n))
 
 ggplot(data = eigenvalues, aes(x=Real, y=Imaginary)) + 
-  geom_point(size = 3, alpha = 0.5, color="blue") + 
-  geom_point(aes(x=0, y=0), inherit.aes = FALSE, size = 20) +
-  geom_circle(aes(x0=0, y0=0, r=1), inherit.aes = FALSE, size = 1.5) +
-  labs(x = NULL, y = NULL) +
-  theme(plot.background =  element_blank(),
-        panel.grid.major =  element_blank(),
-        panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text = element_blank())
+    geom_point(size = 3, alpha = 0.5, color="blue") + 
+    geom_point(aes(x=0, y=0), inherit.aes = FALSE, size = 20) +
+    geom_circle(aes(x0=0, y0=0, r=1), inherit.aes = FALSE, size = 1.5) +
+    labs(x = "Real", y = "Imaginary") +
+    theme(plot.background =  element_blank(),
+          axis.title = element_text(hjust = 0.51, size = 14),
+          panel.grid.major = element_line(colour = "#808080"),
+          panel.grid.minor = element_blank(),
+          text = element_text(family = "CMU Serif"))
+```
+
+```{r, fig.height=2, fig.width=8}
+eigenvalues = data.table(Real = Re(eigs), Imaginary = Im(eigs)) / (2*sqrt(n))
+
+ggplot(data = eigenvalues, aes(x=Imaginary, y=Real)) + 
+    geom_violin(data = normal_vector, aes(x=idx, y=value), trim = FALSE, inherit.aes = FALSE, size = 1) +
+    geom_point(size = 1, alpha = 0.5, color="blue") + 
+    geom_point(aes(x=0, y=0), inherit.aes = FALSE, size = 15) +
+    geom_circle(aes(x0=0, y0=0, r=0.5), inherit.aes = FALSE, size = 1.5) +
+    coord_flip() +
+    labs(x = "Imaginary", y = "Real") +
+    theme(plot.background =  element_blank(),
+          axis.title = element_text(hjust = 0.51, size = 14),
+          panel.grid.major = element_line(colour = "#808080"),
+          panel.grid.minor = element_blank(),
+          text = element_text(family = "CMU Serif"))
 ```

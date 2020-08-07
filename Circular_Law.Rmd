@@ -94,19 +94,19 @@ data = as.data.table(rbindlist(results))
 
 ```{r}
 g = plot_points_animated(data)
-animate(g, width = 2000, height = 2000, fps = 15, nframes = 300, res = 300)
+animate(g, width = 2000, height = 2000, fps = 5, nframes = 40, res = 300, detail = 5)
 anim_save("normal_points.gif")
 ```
 
 ```{r}
 g = plot_density_animated(data, "Real")
-animate(g, width = 2000, height = 667, fps = 15, nframes = 300, res = 300)
+animate(g, width = 2000, height = 667, fps = 5, nframes = 40, res = 300, detail = 5)
 anim_save("normal_density_real.gif")
 ```
 
 ```{r}
 g = plot_density_animated(data, "Imaginary")
-animate(g, width = 667, height = 2000, fps = 15, nframes = 300, res = 300)
+animate(g, width = 667, height = 2000, fps = 5, nframes = 40, res = 300, detail = 5)
 anim_save("normal_density_imaginary.gif")
 ```
 
@@ -125,19 +125,19 @@ data = data %>% group_by(n) %>% slice(-1) #eigen solver screwing up
 
 ```{r}
 g = plot_points_animated(data)
-animate(g, width = 2000, height = 2000, fps = 4, nframes = 40, res = 300)
+animate(g, width = 2000, height = 2000, fps = 5, nframes = 40, res = 300, detail = 5)
 anim_save("uniform_points.gif")
 ```
 
 ```{r}
 g = plot_density_animated(data, "Real")
-animate(g, width = 2000, height = 667, fps = 4, nframes = 40, res = 300)
+animate(g, width = 2000, height = 667, fps = 5, nframes = 40, res = 300, detail = 5)
 anim_save("uniform_density_real.gif")
 ```
 
 ```{r}
 g = plot_density_animated(data, "Imaginary")
-animate(g, width = 667, height = 2000, fps = 4, nframes = 40, res = 300)
+animate(g, width = 667, height = 2000, fps = 5, nframes = 40, res = 300, detail = 5)
 anim_save("uniform_density_imaginary.gif")
 ```
 
@@ -155,26 +155,26 @@ data = as.data.table(rbindlist(results))
 
 ```{r}
 g = plot_points_animated(data)
-animate(g, width = 2000, height = 2000, fps = 4, nframes = 40, res = 300)
+animate(g, width = 2000, height = 2000, fps = 5, nframes = 40, res = 300, detail = 5)
 anim_save("exponential_points.gif")
 ```
 
 ```{r}
 g = plot_density_animated(data, "Real")
-animate(g, width = 2000, height = 667, fps = 4, nframes = 40, res = 300)
+animate(g, width = 2000, height = 667, fps = 5, nframes = 40, res = 300, detail = 5)
 anim_save("exponential_density_real.gif")
 ```
 
 ```{r}
 g = plot_density_animated(data, "Imaginary")
-animate(g, width = 667, height = 2000, fps = 4, nframes = 40, res = 300)
+animate(g, width = 667, height = 2000, fps = 5, nframes = 40, res = 300, detail = 5)
 anim_save("exponential_density_imaginary.gif")
 ```
 
 
 ## Cauchy
 ```{r}
-set.seed(1)
+set.seed(10)
 step = 50
 n_final = 40
 distribution = "cauchy"
@@ -185,18 +185,18 @@ data = as.data.table(rbindlist(results))
 
 ```{r}
 g = plot_points_animated(data)
-animate(g, width = 2000, height = 2000, fps = 4, nframes = 40, res = 300)
+animate(g, width = 2000, height = 2000, fps = 5, nframes = 40, res = 300, detail = 5)
 anim_save("cauchy_points.gif")
 ```
 
 ```{r}
 g = plot_density_animated(data, "Real")
-animate(g, width = 2000, height = 667, fps = 4, nframes = 40, res = 300)
+animate(g, width = 2000, height = 667, fps = 5, nframes = 40, res = 300, detail = 5)
 anim_save("cauchy_density_real.gif")
 ```
 
 ```{r}
 g = plot_density_animated(data, "Imaginary")
-animate(g, width = 667, height = 2000, fps = 4, nframes = 40, res = 300)
+animate(g, width = 667, height = 2000, fps = 5, nframes = 40, res = 300, detail = 5)
 anim_save("cauchy_density_imaginary.gif")
 ```
