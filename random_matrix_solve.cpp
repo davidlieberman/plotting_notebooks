@@ -59,13 +59,11 @@ public:
 			}
 			
 			cx_vec eigval = eig_gen(random_matrix);
-			vec re_eig = real(eigval);
-			vec im_eig = imag(eigval);
 			vec vec_n(n); vec_n.fill(n);
 			
 			mat results_eig(n, 3);
-			results_eig.col(0) = re_eig;
-			results_eig.col(1) = im_eig;
+			results_eig.col(0) = real(eigval);
+			results_eig.col(1) = imag(eigval);
 			results_eig.col(2) = vec_n;
 			results.push_back(results_eig);
 		}
