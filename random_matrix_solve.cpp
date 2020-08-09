@@ -30,7 +30,6 @@ public:
     std::vector<mat> solve(std::string distribution) {
         std::vector<mat> results;
         
-        
 		for (size_t i = 1; i <= n_final; ++i) {
 			size_t n = i * step;
 			mat random_matrix(n, n);
