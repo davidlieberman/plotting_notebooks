@@ -83,7 +83,6 @@ plot_density_animated = function(data, axis){
 
 ## Normal
 ```{r}
-set.seed(1)
 step = 50
 n_final = 40
 distribution = "normal"
@@ -113,7 +112,6 @@ anim_save("normal_density_imaginary.gif")
 
 ## Uniform
 ```{r}
-set.seed(1)
 step = 50
 n_final = 40
 distribution = "uniform"
@@ -144,7 +142,6 @@ anim_save("uniform_density_imaginary.gif")
 
 ## Exponential
 ```{r}
-set.seed(1)
 step = 50
 n_final = 40
 distribution = "exponential"
@@ -174,12 +171,24 @@ anim_save("exponential_density_imaginary.gif")
 
 ## Cauchy
 ```{r}
-set.seed(10)
 step = 50
 n_final = 40
 distribution = "cauchy"
 
-results = random_matrix_solve(step, n_final, distribution)
+bounds_good = FALSE
+density_good = FALSE
+
+while(!bounds_good || !density_good){
+  results = random_matrix_solve(step, n_final, distribution)
+  
+  max_bounds = results %>% map(~max(abs(.x[,1:2]))) %>% unlist() %>% max()
+  bounds_good = max_bounds <= 1.1
+  
+  max_density_real = results %>% map(~max(density(.x[,1])$y)) %>% unlist() %>% max()
+  max_density_imaginary = results %>% map(~max(density(.x[,2])$y)) %>% unlist() %>% max()
+  density_good = max(c(max_density_real, max_density_imaginary)) < 250
+}
+
 data = as.data.table(rbindlist(results))
 ```
 
